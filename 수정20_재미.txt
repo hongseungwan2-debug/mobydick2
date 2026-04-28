@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>모비딕 프로그램 2.0</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-primary: #0d0f14;
+    --bg-secondary: #141720;
+    --bg-panel: #1a1d26;
+    --bg-card: #1e2130;
+    --accent-blue: #2a82e4;
+    --accent-cyan: #00c8ff;
+    --accent-red: #ef5350;
+    --accent-orange: #ff6b35;
+    --text-primary: #e8eaf0;
+    --text-secondary: #8b92a8;
+    --text-muted: #4a5068;
+    --border: #2a2d3e;
+    --negative: #e84545;
+    --highlight: #f0b429;
+  }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    font-size: 13px;
+  }
+
+  .main {
+    display: grid;
+    grid-template-columns: 160px 1fr 160px;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .panel {
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .panel-title {
+    padding: 6px 8px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+    letter-spacing: 0.5px;
+  }
+
+  .rank-list { overflow-y: auto; flex: 1; }
+  .rank-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 8px;
+    border-bottom: 1px solid #1c1f2a;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .rank-item:hover { background: var(--bg-card); }
+  .rank-item.active { background: #1f2540; border-left: 2px solid var(--accent-cyan); }
+  .rank-name { font-size: 11px; font-weight: 500; color: var(--text-primary); }
+  .rank-pct { font-size: 11px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+
+  .center-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-right: 1px solid var(--border);
+  }
+
+  .trade-controls {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    padding: 6px 0;
+  }
+
+  .title-row {
+    display: flex;
+    align-items: center;
+    padding: 0 0 5px 8px;
+  }
+  .title-left { display: flex; align-items: center; gap: 6px; }
+  .logo-icon img { height: 28px; width: auto; }
+  .logo-title { font-size: 18px; font-weight: 900; letter-spacing: 1px; color: var(--text-primary); }
+  .logo-title span { color: var(--accent-cyan); }
+  .timer-wrap {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  .timer-wrap .timer-count { color: var(--text-secondary); font-size: 12px; margin-left: 4px; }
+
+  .control-row1 {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 5px;
+    padding-left: 8px;
+  }
+  .control-row2 {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding-left: 8px;
+  }
+
+  .btn {
+    padding: 5px 6px;
+    border: none;
+    border-radius: 3px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    margin-right: 4px;
+  }
+  .btn:last-child { margin-right: 0; }
+  .btn:hover { filter: brightness(1.15); }
+  .btn:active { transform: scale(0.97); }
+
+  .btn-pct { background: #2a2d3e; color: var(--text-primary); flex: 1; text-align: center; }
+  .btn-input {
+    flex: 1.2;
+    padding: 5px 6px;
+    background: #12141c;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text-primary);
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    text-align: right;
+    margin-right: 4px;
+    min-width: 0;
+  }
+  .btn-buy-limit { background: #1e3a5f; color: #5ba8e8; border: 1px solid #2a5fa0; flex: 1.5; text-align: center; }
+  .btn-sell-market  { background: #3d1f1f; color: var(--accent-red); border: 1px solid #6b2c2c; flex: 1.5; text-align: center; }
+  .btn-sell-market2 { background: #4a1a1a; color: #ff8080; border: 1px solid #7a2a2a; flex: 1.5; text-align: center; margin-right: 0; }
+  .btn-stoploss { background: var(--accent-red); color: white; flex: 1.2; text-align: center; }
+  .btn-sl-neg  { background: #2a1818; color: var(--negative); border: 1px solid #5a2020; flex: 1; text-align: center; }
+  .btn-sl-zero { background: #1a1a1a; color: #8b92a8; border: 1px solid #3a3d50; flex: 0.8; text-align: center; }
+  .btn-sl-pos  { background: #182a18; color: #26c281; border: 1px solid #265026; flex: 1; text-align: center; }
+  .btn-execute { background: #3a3d50; color: #8b92a8; flex: 1.5; text-align: center; margin-right: 0; }
+
+  .icon-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    padding: 6px 12px;
+    flex-shrink: 0;
+  }
+  .icon-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    cursor: pointer; padding: 4px 12px; border-radius: 6px;
+    border: 1px solid var(--border); background: #12141c;
+    transition: all 0.2s; user-select: none;
+  }
+  .icon-btn:hover { border-color: #4a5068; background: #1a1d26; }
+  .icon-btn .icon-img { width: 26px; height: 26px; object-fit: contain; filter: brightness(2.5) invert(1); transition: all 0.2s; }
+  .icon-btn .icon-label { font-size: 10px; color: var(--text-muted); transition: color 0.2s; }
+  .icon-btn.active { border-color: #26c281; background: #0d2318; box-shadow: 0 0 8px rgba(38,194,129,0.3); }
+  .icon-btn.active .icon-img { filter: none; }
+  .icon-btn.active .icon-label { color: #26c281; }
+  .icon-btn.active-blue { border-color: #00c8ff; background: #051a24; box-shadow: 0 0 8px rgba(0,200,255,0.3); }
+  .icon-btn.active-blue .icon-img { filter: none; }
+  .icon-btn.active-blue .icon-label { color: #00c8ff; }
+  .icon-btn.active-yellow { border-color: #f0b429; background: #1f1500; box-shadow: 0 0 8px rgba(240,180,41,0.3); }
+  .icon-btn.active-yellow .icon-img { filter: none; }
+  .icon-btn.active-yellow .icon-label { color: #f0b429; }
+
+  .chart-area { flex: 1; background: #0e1018; overflow: hidden; min-height: 0; }
+
+  .jangchil-area {
+    height: 180px; flex-shrink: 0;
+    background: #0a0c10; border-top: 1px solid var(--border);
+    display: flex; align-items: center; padding: 10px 16px; gap: 14px;
+    position: relative; overflow: hidden;
+  }
+  .jangchil-area::before {
+    content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 18px, rgba(255,255,255,0.015) 18px, rgba(255,255,255,0.015) 19px);
+    pointer-events: none;
+  }
+  .jangchil-char { flex-shrink: 0; order: 2; }
+  .jangchil-char img { height: 130px; width: auto; }
+  .jangchil-bubble {
+    flex: 1; order: 1;
+    background: #0e1a0e; border: 1px solid #2a4a2a; border-radius: 8px;
+    padding: 10px 14px; position: relative; font-size: 12px; line-height: 1.7; text-align: center;
+  }
+  .jangchil-bubble::before {
+    content: ''; position: absolute; right: -9px; top: 50%; transform: translateY(-50%);
+    border: 8px solid transparent; border-left-color: #2a4a2a; border-right: none;
+  }
+  .jangchil-bubble::after {
+    content: ''; position: absolute; right: -7px; top: 50%; transform: translateY(-50%);
+    border: 7px solid transparent; border-left-color: #0e1a0e; border-right: none;
+  }
+  .jangchil-title { font-size: 11px; font-weight: 700; color: #f0b429; margin-bottom: 5px; letter-spacing: 1px; }
+  .jangchil-title span { color: #ff4444; }
+  .jangchil-msg { color: #b8e8b8; font-size: 12px; }
+  .jangchil-sub { color: #6a8a6a; font-size: 11px; margin-top: 4px; }
+  .jangchil-sub span { color: #f0b429; }
+
+  .right-panel { display: flex; flex-direction: column; overflow: hidden; border-right: none; }
+  .analysis-card {
+    background: #1a1020; border: 1px solid #3d1a5a; border-radius: 4px;
+    margin: 8px; padding: 8px; text-align: center; flex-shrink: 0;
+  }
+  .analysis-card-title { font-size: 11px; color: #9b6dbf; margin-bottom: 4px; }
+  .analysis-card-status { font-size: 14px; font-weight: 700; color: #cc88ff; }
+  .whale-list { overflow-y: auto; flex: 1; }
+  .whale-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 4px 8px; border-bottom: 1px solid #1c1f2a; cursor: pointer; transition: background 0.15s;
+  }
+  .whale-item:hover { background: var(--bg-card); }
+  .whale-name { font-size: 11px; color: var(--text-primary); }
+  .whale-pct { font-size: 11px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: #ff4444; }
+
+  .footer { display: grid; grid-template-columns: 1fr 1fr; height: 56px; flex-shrink: 0; }
+  .footer-btn { border: none; font-family: 'Noto Sans KR', sans-serif; font-size: 17px; font-weight: 900; cursor: pointer; transition: filter 0.15s; }
+  .footer-btn:hover { filter: brightness(1.1); }
+  .footer-wait { background: var(--highlight); color: #1a1000; }
+  .footer-cancel { background: var(--accent-orange); color: white; }
+
+  .ws-status {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: #ff4444; margin-left: 6px; vertical-align: middle; transition: background 0.3s;
+  }
+  .ws-status.connected { background: #26c281; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #2a2d3e; border-radius: 2px; }
+
+  /* ── 추가: 프록시 서버 상태 표시 ── */
+  .proxy-status {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-left: 8px;
+    display: none;
+    vertical-align: middle;
+  }
+  .proxy-status.ok {
+    display: inline;
+    color: #00ff88;
+    text-shadow: 0 0 8px rgba(0,255,136,0.9), 0 0 16px rgba(0,255,136,0.5);
+  }
+  .proxy-status.error {
+    display: inline;
+    color: #ff2222;
+    text-shadow: 0 0 8px rgba(255,34,34,0.9), 0 0 16px rgba(255,34,34,0.5);
+    animation: blinkStatus 0.6s ease-in-out infinite alternate;
+  }
+
+  /* ── 추가: 네트워크 상태 표시 ── */
+  .network-status {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-left: 8px;
+    display: none;
+    vertical-align: middle;
+  }
+  .network-status.ok {
+    display: inline;
+    color: #00ff88;
+    text-shadow: 0 0 8px rgba(0,255,136,0.9), 0 0 16px rgba(0,255,136,0.5);
+  }
+  .network-status.error {
+    display: inline;
+    color: #ff2222;
+    text-shadow: 0 0 8px rgba(255,34,34,0.9), 0 0 16px rgba(255,34,34,0.5);
+    animation: blinkStatus 0.6s ease-in-out infinite alternate;
+  }
+  @keyframes blinkStatus {
+    from { text-shadow: 0 0 8px rgba(255,34,34,0.9), 0 0 16px rgba(255,34,34,0.5); opacity: 1; }
+    to   { text-shadow: 0 0 3px rgba(255,34,34,0.4); opacity: 0.5; }
+  }
+
+  /* ── 추가: 버튼 활성화 스타일 ── */
+  .btn-pct.pct-active {
+    color: #26c281;
+    border: 1.5px solid #26c281;
+    box-shadow: 0 0 6px rgba(38,194,129,0.3);
+  }
+  /* 추가요청01: 매수예약 활성화 — 파란 네온 강하게 */
+  .btn-buy-limit.buylimit-active {
+    color: #00cfff;
+    border: 2px solid #00cfff;
+    box-shadow: 0 0 14px rgba(0,207,255,0.9), 0 0 28px rgba(0,207,255,0.5);
+    background: #071a2a;
+    animation: blinkBlue 0.7s ease-in-out infinite alternate;
+  }
+  @keyframes blinkBlue {
+    from { box-shadow: 0 0 14px rgba(0,207,255,0.9), 0 0 28px rgba(0,207,255,0.5); }
+    to   { box-shadow: 0 0 5px rgba(0,207,255,0.4), 0 0 10px rgba(0,207,255,0.2); }
+  }
+  /* 추가요청01: 금액 입력창 활성화 — 파란 테두리 */
+  .btn-input.input-active {
+    border: 1.5px solid #00cfff;
+    box-shadow: 0 0 8px rgba(0,207,255,0.5);
+  }
+  /* 추가요청03: 즉시매수 활성화 — 강렬한 빨간 네온 + 깜빡임 */
+  .btn-sell-market.trade-active {
+    color: #ff4400;
+    border: 2px solid #ff4400;
+    box-shadow: 0 0 14px rgba(255,68,0,0.95), 0 0 28px rgba(255,68,0,0.6);
+    background: #2a0a00;
+    animation: blinkBuyNow 0.6s ease-in-out infinite alternate;
+  }
+  @keyframes blinkBuyNow {
+    from { box-shadow: 0 0 14px rgba(255,68,0,0.95), 0 0 28px rgba(255,68,0,0.6); }
+    to   { box-shadow: 0 0 5px rgba(255,68,0,0.4), 0 0 10px rgba(255,68,0,0.2); }
+  }
+  /* 추가요청03: 즉시매도 활성화 — 강렬한 주황 네온 + 깜빡임 */
+  .btn-sell-market2.trade-active {
+    color: #ff8800;
+    border: 2px solid #ff8800;
+    box-shadow: 0 0 14px rgba(255,136,0,0.95), 0 0 28px rgba(255,136,0,0.6);
+    background: #2a1500;
+    animation: blinkSellNow 0.6s ease-in-out infinite alternate;
+  }
+  @keyframes blinkSellNow {
+    from { box-shadow: 0 0 14px rgba(255,136,0,0.95), 0 0 28px rgba(255,136,0,0.6); }
+    to   { box-shadow: 0 0 5px rgba(255,136,0,0.4), 0 0 10px rgba(255,136,0,0.2); }
+  }
+  .btn-stoploss.stoploss-active {
+    border: 2px solid #ff2222;
+    box-shadow: 0 0 16px rgba(255,34,34,0.95), 0 0 32px rgba(255,34,34,0.6), 0 0 48px rgba(255,34,34,0.3);
+    color: #ff2222;
+    background: #3a0808;
+    animation: blinkRed 0.6s ease-in-out infinite alternate;
+  }
+  @keyframes blinkRed {
+    from { box-shadow: 0 0 16px rgba(255,34,34,0.95), 0 0 32px rgba(255,34,34,0.6); }
+    to   { box-shadow: 0 0 6px rgba(255,34,34,0.4), 0 0 12px rgba(255,34,34,0.2); }
+  }
+  .btn-sl-neg.slip-active,
+  .btn-sl-zero.slip-active,
+  .btn-sl-pos.slip-active {
+    color: #f0b429;
+    border: 1.5px solid #f0b429;
+    box-shadow: 0 0 6px rgba(240,180,41,0.3);
+  }
+  .btn-execute.execute-active {
+    color: #00ff88;
+    border: 2px solid #00ff88;
+    box-shadow: 0 0 16px rgba(0,255,136,0.95), 0 0 32px rgba(0,255,136,0.6), 0 0 48px rgba(0,255,136,0.3);
+    background: #0a2a1a;
+    animation: blinkGreen 0.6s ease-in-out infinite alternate;
+  }
+  @keyframes blinkGreen {
+    from { box-shadow: 0 0 16px rgba(0,255,136,0.95), 0 0 32px rgba(0,255,136,0.6); }
+    to   { box-shadow: 0 0 6px rgba(0,255,136,0.4), 0 0 12px rgba(0,255,136,0.2); }
+  }
+</style>
+</head>
+<body>
+
+<div class="main">
+
+  <div class="panel left-panel">
+    <div class="panel-title">
+      전일대비 TOP 20
+      <span class="ws-status" id="wsStatus"></span>
+    </div>
+    <div class="rank-list" id="rankList">
+      <div style="padding:20px 8px; color:#4a5068; font-size:11px; text-align:center;">연결 중...</div>
+    </div>
+  </div>
+
+  <div class="center-panel">
+    <div class="trade-controls">
+
+      <div class="title-row">
+        <div class="title-left">
+          <span class="logo-icon"><img src="" alt="고래" /></span>
+          <span class="logo-title">모비딕 프로그램 <span>2.0</span></span>
+        </div>
+        <div class="timer-wrap">
+          <span id="clock">00:00:00</span>
+          <span class="timer-count">(60)</span>
+        </div>
+      </div>
+
+      <div class="control-row1">
+        <button class="btn btn-pct">10%</button>
+        <button class="btn btn-pct">25%</button>
+        <button class="btn btn-pct">50%</button>
+        <button class="btn btn-pct">100%</button>
+        <input class="btn-input" type="text" value="0" />
+        <button class="btn btn-buy-limit">매수예약</button>
+        <button class="btn btn-sell-market">즉시매수<br><span style="font-size:10px;font-weight:400">(시장가)</span></button>
+        <button class="btn btn-sell-market2">즉시매도<br><span style="font-size:10px;font-weight:400">(시장가)</span></button>
+      </div>
+
+      <div class="control-row2">
+        <button class="btn btn-stoploss">손절</button>
+        <button class="btn btn-sl-neg">-0.5%</button>
+        <button class="btn btn-sl-neg">-1.0%</button>
+        <button class="btn btn-sl-neg">-1.5%</button>
+        <button class="btn btn-sl-zero">0%</button>
+        <button class="btn btn-sl-pos">+2%</button>
+        <button class="btn btn-sl-pos">+3%</button>
+        <button class="btn btn-execute">실행</button>
+      </div>
+
+    </div>
+
+    <div class="icon-bar">
+      <div class="icon-btn" id="iconProxy" onclick="toggleIcon(this,'active')">
+        <img class="icon-img" src="" />
